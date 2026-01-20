@@ -7,10 +7,7 @@ use std::{fmt, io, ptr};
 #[cfg(windows)]
 use windows_sys::Win32::Networking::WinSock::SOCKADDR_IN6_0;
 
-#[cfg(unix)]
-use crate::sys::AF_UNIX;
-
-use crate::sys::{c_int, sockaddr_in, sockaddr_in6, sockaddr_storage, AF_INET, AF_INET6};
+use crate::sys::{c_int, sockaddr_in, sockaddr_in6, sockaddr_storage, AF_INET, AF_INET6, AF_UNIX};
 use crate::Domain;
 
 /// The integer type used with `getsockname` on this platform.
@@ -215,7 +212,6 @@ impl SockAddr {
     /// Constructs a `SockAddr` with the family `AF_UNIX` and the provided path.
     ///
     /// Returns an error if the path is longer than `SUN_LEN`.
-    #[cfg(not(target_os = "hermit"))]
     pub fn unix<P>(path: P) -> io::Result<SockAddr>
     where
         P: AsRef<Path>,
@@ -273,15 +269,8 @@ impl SockAddr {
 
     /// Returns true if this address is of a unix socket (for local interprocess communication),
     /// i.e. it is from the `AF_UNIX` family, false otherwise.
-     #[cfg(not(target_os = "hermit"))]
     pub fn is_unix(&self) -> bool {
         self.storage.ss_family == AF_UNIX as sa_family_t
-    }
-    /// Returns true if this address is of a unix socket (for local interprocess communication),
-    /// i.e. it is from the `AF_UNIX` family, false otherwise.
-    #[cfg(target_os = "hermit")]
-    pub fn is_unix(&self) -> bool {
-        false
     }
 
     /// Returns this address as a `SocketAddr` if it is in the `AF_INET` (IPv4)
@@ -304,7 +293,7 @@ impl SockAddr {
                 ip,
                 port,
                 addr.sin6_flowinfo,
-                #[cfg(any(unix, target_os = "hermit"))]
+                #[cfg(unix)]
                 addr.sin6_scope_id,
                 #[cfg(windows)]
                 unsafe {
@@ -368,6 +357,7 @@ impl From<SocketAddrV4> for SockAddr {
             target_os = "dragonfly",
             target_os = "freebsd",
             target_os = "haiku",
+            target_os = "hermit",
             target_os = "ios",
             target_os = "visionos",
             target_os = "macos",
@@ -395,7 +385,7 @@ impl From<SocketAddrV6> for SockAddr {
             storage.sin6_port = addr.port().to_be();
             storage.sin6_addr = crate::sys::to_in6_addr(addr.ip());
             storage.sin6_flowinfo = addr.flowinfo();
-            #[cfg(any(unix, target_os = "hermit"))]
+            #[cfg(unix)]
             {
                 storage.sin6_scope_id = addr.scope_id();
             }
@@ -411,6 +401,7 @@ impl From<SocketAddrV6> for SockAddr {
             target_os = "dragonfly",
             target_os = "freebsd",
             target_os = "haiku",
+            target_os = "hermit",
             target_os = "ios",
             target_os = "visionos",
             target_os = "macos",
@@ -435,6 +426,7 @@ impl fmt::Debug for SockAddr {
             target_os = "dragonfly",
             target_os = "freebsd",
             target_os = "haiku",
+            target_os = "hermit",
             target_os = "ios",
             target_os = "visionos",
             target_os = "macos",
