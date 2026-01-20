@@ -8,16 +8,16 @@
 
 use std::fmt;
 use std::io::{self, Read, Write};
-#[cfg(not(target_os = "redox"))]
+#[cfg(not(any(target_os = "redox", target_os = "hermit")))]
 use std::io::{IoSlice, IoSliceMut};
-#[cfg(not(target_os = "redox"))]
-use std::os::hermit::io::{FromRawFd, IntoRawFd};
 use std::mem::MaybeUninit;
 #[cfg(not(target_os = "nto"))]
 use std::net::Ipv6Addr;
 use std::net::{self, Ipv4Addr, Shutdown};
 #[cfg(unix)]
 use std::os::fd::{FromRawFd, IntoRawFd};
+#[cfg(not(any(target_os = "redox", target_os = "hermit")))]
+use std::os::hermit::io::{FromRawFd, IntoRawFd};
 #[cfg(windows)]
 use std::os::windows::io::{FromRawSocket, IntoRawSocket};
 use std::time::Duration;
@@ -214,6 +214,7 @@ impl Socket {
     ///
     /// If the connection request times out, it may still be processing in the
     /// background - a second call to `connect` or `connect_timeout` may fail.
+    #[cfg(not(target_os = "hermit"))]
     pub fn connect_timeout(&self, addr: &SockAddr, timeout: Duration) -> io::Result<()> {
         self.set_nonblocking(true)?;
         let res = self.connect(addr);
@@ -257,6 +258,7 @@ impl Socket {
     /// On Cygwin, a Unix domain socket connect blocks until the server accepts
     /// it. If the behavior is not expected, try [`Socket::set_no_peercred`]
     /// (Cygwin only).
+    #[cfg(not(target_os = "hermit"))]
     #[allow(rustdoc::broken_intra_doc_links)] // Socket::set_no_peercred
     pub fn accept(&self) -> io::Result<(Socket, SockAddr)> {
         // Use `accept4` on platforms that support it.
@@ -284,6 +286,7 @@ impl Socket {
             target_os = "netbsd",
             target_os = "openbsd",
             target_os = "cygwin",
+            target_os = "hermit",
         )))]
         {
             let (socket, addr) = self.accept_raw()?;
@@ -390,6 +393,7 @@ impl Socket {
     /// This function will cause all pending and future I/O on the specified
     /// portions to return immediately with an appropriate value.
     #[doc = man_links!(shutdown(2))]
+    #[cfg(not(target_os = "hermit"))]
     pub fn shutdown(&self, how: Shutdown) -> io::Result<()> {
         sys::shutdown(self.as_raw(), how)
     }
@@ -415,6 +419,7 @@ impl Socket {
     /// Note that the [`io::Read::read`] implementation calls this function with
     /// a `buf`fer of type `&mut [u8]`, allowing initialised buffers to be used
     /// without using `unsafe`.
+    #[cfg(not(target_os = "hermit"))]
     pub fn recv(&self, buf: &mut [MaybeUninit<u8>]) -> io::Result<usize> {
         self.recv_with_flags(buf, 0)
     }
@@ -436,6 +441,7 @@ impl Socket {
     /// the underlying `recv` call.
     ///
     /// [`recv`]: Socket::recv
+    #[cfg(not(target_os = "hermit"))]
     pub fn recv_with_flags(
         &self,
         buf: &mut [MaybeUninit<u8>],
@@ -513,6 +519,7 @@ impl Socket {
     /// [`recv`].
     ///
     /// [`recv`]: Socket::recv
+    #[cfg(not(target_os = "hermit"))]
     pub fn peek(&self, buf: &mut [MaybeUninit<u8>]) -> io::Result<usize> {
         self.recv_with_flags(buf, sys::MSG_PEEK)
     }
@@ -527,6 +534,7 @@ impl Socket {
     /// [`recv`].
     ///
     /// [`recv`]: Socket::recv
+    #[cfg(not(target_os = "hermit"))]
     pub fn recv_from(&self, buf: &mut [MaybeUninit<u8>]) -> io::Result<(usize, SockAddr)> {
         self.recv_from_with_flags(buf, 0)
     }
@@ -535,6 +543,7 @@ impl Socket {
     /// flags to the underlying `recvfrom` call.
     ///
     /// [`recv_from`]: Socket::recv_from
+    #[cfg(not(target_os = "hermit"))]
     pub fn recv_from_with_flags(
         &self,
         buf: &mut [MaybeUninit<u8>],
@@ -613,6 +622,7 @@ impl Socket {
     ///
     /// [`recv`]: Socket::recv
     /// [`peek_sender`]: Socket::peek_sender
+    #[cfg(not(target_os = "hermit"))]
     pub fn peek_from(&self, buf: &mut [MaybeUninit<u8>]) -> io::Result<(usize, SockAddr)> {
         self.recv_from_with_flags(buf, sys::MSG_PEEK)
     }
@@ -623,6 +633,7 @@ impl Socket {
     /// but suppresses the `WSAEMSGSIZE` error on Windows.
     ///
     /// [`peek_from`]: Socket::peek_from
+    #[cfg(not(target_os = "hermit"))]
     pub fn peek_sender(&self) -> io::Result<SockAddr> {
         sys::peek_sender(self.as_raw())
     }
@@ -646,6 +657,7 @@ impl Socket {
     ///
     /// On success returns the number of bytes that were sent.
     #[doc = man_links!(send(2))]
+    #[cfg(not(target_os = "hermit"))]
     pub fn send(&self, buf: &[u8]) -> io::Result<usize> {
         self.send_with_flags(buf, 0)
     }
@@ -654,6 +666,7 @@ impl Socket {
     /// `send` call.
     ///
     /// [`send`]: Socket::send
+    #[cfg(not(target_os = "hermit"))]
     pub fn send_with_flags(&self, buf: &[u8], flags: c_int) -> io::Result<usize> {
         sys::send(self.as_raw(), buf, flags)
     }
@@ -696,6 +709,7 @@ impl Socket {
     ///
     /// This is typically used on UDP or datagram-oriented sockets.
     #[doc = man_links!(sendto(2))]
+    #[cfg(not(target_os = "hermit"))]
     pub fn send_to(&self, buf: &[u8], addr: &SockAddr) -> io::Result<usize> {
         self.send_to_with_flags(buf, addr, 0)
     }
@@ -704,6 +718,7 @@ impl Socket {
     /// to the underlying `sendto` call.
     ///
     /// [`send_to`]: Socket::send_to
+    #[cfg(not(target_os = "hermit"))]
     pub fn send_to_with_flags(
         &self,
         buf: &[u8],
@@ -788,6 +803,7 @@ fn set_common_flags(socket: Socket) -> io::Result<Socket> {
             target_os = "openbsd",
             target_os = "espidf",
             target_os = "vita",
+            target_os = "hermit",
             target_os = "cygwin",
         ))
     ))]
@@ -819,6 +835,7 @@ fn set_common_flags(socket: Socket) -> io::Result<Socket> {
     target_os = "illumos",
     target_os = "linux",
     target_os = "netbsd",
+    target_os = "hermit",
     target_os = "openbsd",
     target_os = "cygwin",
 )))]
@@ -855,6 +872,7 @@ fn set_common_accept_flags(socket: Socket) -> io::Result<Socket> {
     target_os = "illumos",
     target_os = "netbsd",
     target_os = "redox",
+    target_os = "hermit",
     target_os = "solaris",
 )))]
 #[derive(Debug, Copy, Clone)]
@@ -991,7 +1009,7 @@ impl Socket {
     /// receive data stream. Otherwise, out-of-band data is passed only when the
     /// `MSG_OOB` flag is set during receiving. As per RFC6093, TCP sockets
     /// using the Urgent mechanism are encouraged to set this flag.
-     #[cfg(not(any(target_os = "redox", target_os = "hermit")))]
+    #[cfg(not(any(target_os = "redox", target_os = "hermit")))]
     pub fn set_out_of_band_inline(&self, oob_inline: bool) -> io::Result<()> {
         unsafe {
             setsockopt(
@@ -1175,6 +1193,7 @@ impl Socket {
     ///
     /// If the returned timeout is `None`, then `write` and `send` calls will
     /// block indefinitely.
+    #[cfg(not(target_os = "hermit"))]
     pub fn write_timeout(&self) -> io::Result<Option<Duration>> {
         sys::timeout_opt(self.as_raw(), sys::SOL_SOCKET, sys::SO_SNDTIMEO)
     }
@@ -1220,7 +1239,10 @@ impl Socket {
     /// For more information about this option, see [`set_header_included_v4`].
     ///
     /// [`set_header_included_v4`]: Socket::set_header_included_v4
-    #[cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf", target_os = "hermit"))))]
+    #[cfg(all(
+        feature = "all",
+        not(any(target_os = "redox", target_os = "espidf", target_os = "hermit"))
+    ))]
     pub fn header_included_v4(&self) -> io::Result<bool> {
         unsafe {
             getsockopt::<c_int>(self.as_raw(), sys::IPPROTO_IP, sys::IP_HDRINCL)
@@ -1240,7 +1262,12 @@ impl Socket {
     /// [`IP_TTL`]: Socket::set_ttl_v4
     /// [`IP_TOS`]: Socket::set_tos_v4
     #[cfg_attr(
-        any(target_os = "fuchsia", target_os = "illumos", target_os = "solaris", target_os = "hermit"),
+        any(
+            target_os = "fuchsia",
+            target_os = "illumos",
+            target_os = "solaris",
+            target_os = "hermit"
+        ),
         allow(rustdoc::broken_intra_doc_links)
     )]
     #[cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf"))))]
@@ -1867,6 +1894,7 @@ impl Socket {
     /// For more information about this option, see [`set_multicast_hops_v6`].
     ///
     /// [`set_multicast_hops_v6`]: Socket::set_multicast_hops_v6
+    #[cfg(not(target_os = "hermit"))]
     pub fn multicast_hops_v6(&self) -> io::Result<u32> {
         unsafe {
             getsockopt::<c_int>(self.as_raw(), sys::IPPROTO_IPV6, sys::IPV6_MULTICAST_HOPS)
@@ -1879,6 +1907,7 @@ impl Socket {
     /// Indicates the number of "routers" multicast packets will transit for
     /// this socket. The default value is 1 which means that multicast packets
     /// don't leave the local network unless explicitly requested.
+    #[cfg(not(target_os = "hermit"))]
     pub fn set_multicast_hops_v6(&self, hops: u32) -> io::Result<()> {
         unsafe {
             setsockopt(
@@ -1930,6 +1959,7 @@ impl Socket {
     /// For more information about this option, see [`set_multicast_if_v6`].
     ///
     /// [`set_multicast_if_v6`]: Socket::set_multicast_if_v6
+    #[cfg(not(target_os = "hermit"))]
     pub fn multicast_if_v6(&self) -> io::Result<u32> {
         unsafe {
             getsockopt::<c_int>(self.as_raw(), sys::IPPROTO_IPV6, sys::IPV6_MULTICAST_IF)
@@ -1942,6 +1972,7 @@ impl Socket {
     /// Specifies the interface to use for routing multicast packets. Unlike
     /// ipv4, this is generally required in ipv6 contexts where network routing
     /// prefixes may overlap.
+    #[cfg(not(target_os = "hermit"))]
     pub fn set_multicast_if_v6(&self, interface: u32) -> io::Result<()> {
         unsafe {
             setsockopt(
@@ -1958,6 +1989,7 @@ impl Socket {
     /// For more information about this option, see [`set_multicast_loop_v6`].
     ///
     /// [`set_multicast_loop_v6`]: Socket::set_multicast_loop_v6
+    #[cfg(not(target_os = "hermit"))]
     pub fn multicast_loop_v6(&self) -> io::Result<bool> {
         unsafe {
             getsockopt::<c_int>(self.as_raw(), sys::IPPROTO_IPV6, sys::IPV6_MULTICAST_LOOP)
@@ -1969,6 +2001,7 @@ impl Socket {
     ///
     /// Controls whether this socket sees the multicast packets it sends itself.
     /// Note that this may not have any affect on IPv4 sockets.
+    #[cfg(not(target_os = "hermit"))]
     pub fn set_multicast_loop_v6(&self, loop_v6: bool) -> io::Result<()> {
         unsafe {
             setsockopt(
@@ -1983,6 +2016,7 @@ impl Socket {
     /// Get the value of the `IPV6_UNICAST_HOPS` option for this socket.
     ///
     /// Specifies the hop limit for ipv6 unicast packets
+    #[cfg(not(target_os = "hermit"))]
     pub fn unicast_hops_v6(&self) -> io::Result<u32> {
         unsafe {
             getsockopt::<c_int>(self.as_raw(), sys::IPPROTO_IPV6, sys::IPV6_UNICAST_HOPS)
@@ -1993,6 +2027,7 @@ impl Socket {
     /// Set the value for the `IPV6_UNICAST_HOPS` option on this socket.
     ///
     /// Specifies the hop limit for ipv6 unicast packets
+    #[cfg(not(target_os = "hermit"))]
     pub fn set_unicast_hops_v6(&self, hops: u32) -> io::Result<()> {
         unsafe {
             setsockopt(
@@ -2052,6 +2087,7 @@ impl Socket {
         target_os = "hurd",
         target_os = "espidf",
         target_os = "vita",
+        target_os = "hermit",
     )))]
     pub fn recv_tclass_v6(&self) -> io::Result<bool> {
         unsafe {
@@ -2077,6 +2113,7 @@ impl Socket {
         target_os = "hurd",
         target_os = "espidf",
         target_os = "vita",
+        target_os = "hermit",
     )))]
     pub fn set_recv_tclass_v6(&self, recv_tclass: bool) -> io::Result<()> {
         unsafe {
@@ -2285,6 +2322,7 @@ impl Socket {
     /// # Ok(()) }
     /// ```
     ///
+    #[cfg(not(target_os = "hermit"))]
     pub fn set_tcp_keepalive(&self, params: &TcpKeepalive) -> io::Result<()> {
         self.set_keepalive(true)?;
         sys::set_tcp_keepalive(self.as_raw(), params)
@@ -2295,6 +2333,7 @@ impl Socket {
     /// For more information about this option, see [`set_tcp_nodelay`].
     ///
     /// [`set_tcp_nodelay`]: Socket::set_tcp_nodelay
+    #[cfg(not(target_os = "hermit"))]
     pub fn tcp_nodelay(&self) -> io::Result<bool> {
         unsafe {
             getsockopt::<Bool>(self.as_raw(), sys::IPPROTO_TCP, sys::TCP_NODELAY)
@@ -2320,16 +2359,25 @@ impl Socket {
         }
     }
 }
-
+#[cfg(target_os = "hermit")]
+impl Socket {
+    pub fn recv(&self, buf: &[u8]) -> io::Result<usize> {
+        todo!()
+    }
+    pub fn send(&self, buf: &[u8]) -> io::Result<usize> {
+        todo!()
+    }
+}
 impl Read for Socket {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         // Safety: the `recv` implementation promises not to write uninitialised
         // bytes to the `buf`fer, so this casting is safe.
+        #[cfg(not(target_os = "hermit"))]
         let buf = unsafe { &mut *(buf as *mut [u8] as *mut [MaybeUninit<u8>]) };
         self.recv(buf)
     }
 
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(not(any(target_os = "redox", target_os = "hermit")))]
     fn read_vectored(&mut self, bufs: &mut [IoSliceMut<'_>]) -> io::Result<usize> {
         // Safety: both `IoSliceMut` and `MaybeUninitSlice` promise to have the
         // same layout, that of `iovec`/`WSABUF`. Furthermore, `recv_vectored`
@@ -2343,11 +2391,12 @@ impl Read for Socket {
 impl<'a> Read for &'a Socket {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         // Safety: see other `Read::read` impl.
+        #[cfg(not(target_os = "hermit"))]
         let buf = unsafe { &mut *(buf as *mut [u8] as *mut [MaybeUninit<u8>]) };
         self.recv(buf)
     }
 
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(not(any(target_os = "redox", target_os = "hermit")))]
     fn read_vectored(&mut self, bufs: &mut [IoSliceMut<'_>]) -> io::Result<usize> {
         // Safety: see other `Read::read` impl.
         let bufs = unsafe { &mut *(bufs as *mut [IoSliceMut<'_>] as *mut [MaybeUninitSlice<'_>]) };
@@ -2360,7 +2409,7 @@ impl Write for Socket {
         self.send(buf)
     }
 
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(not(any(target_os = "redox", target_os = "hermit")))]
     fn write_vectored(&mut self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
         self.send_vectored(bufs)
     }
@@ -2375,7 +2424,7 @@ impl<'a> Write for &'a Socket {
         self.send(buf)
     }
 
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(not(any(target_os = "redox", target_os = "hermit")))]
     fn write_vectored(&mut self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
         self.send_vectored(bufs)
     }

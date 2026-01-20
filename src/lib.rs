@@ -112,10 +112,15 @@ macro_rules! from {
     ($from: ty, $for: ty) => {
         impl From<$from> for $for {
             fn from(socket: $from) -> $for {
+                let _ = socket;
                 #[cfg(any(unix, target_os = "hermit"))]
-                unsafe {
-                    <$for>::from_raw_fd(socket.into_raw_fd())
-                }
+
+                todo!();
+                /*unsafe {
+
+                    todo!()
+                    //<$for>::from_raw_fd(socket.into_raw_fd())
+                }*/
                 #[cfg(windows)]
                 unsafe {
                     <$for>::from_raw_socket(socket.into_raw_socket())
@@ -195,6 +200,7 @@ pub use sockaddr::{sa_family_t, socklen_t, SockAddr, SockAddrStorage};
     target_os = "netbsd",
     target_os = "redox",
     target_os = "solaris",
+    target_os = "hermit",
 )))]
 pub use socket::InterfaceIndexOrAddress;
 pub use socket::Socket;
