@@ -43,19 +43,10 @@ use std::num::NonZeroU32;
         target_os = "watchos",
     )
 ))]
-
-#[cfg(target_os = "hermit")]
-use std::os::hermit::ffi::OsStrExt;
-#[cfg(target_os = "hermit")]
-use std::os::hermit::io::RawFd;
-#[cfg(target_os = "hermit")]
-use std::os::hermit::io::{AsFd, AsRawFd, BorrowedFd, FromRawFd, IntoRawFd, OwnedFd};
 use std::num::NonZeroUsize;
 use std::os::fd::{AsFd, AsRawFd, BorrowedFd, FromRawFd, IntoRawFd, OwnedFd, RawFd};
-#[cfg(unix)]
 use std::os::unix::ffi::OsStrExt;
 #[cfg(feature = "all")]
-#[cfg(unix)]
 use std::os::unix::net::{UnixDatagram, UnixListener, UnixStream};
 use std::path::Path;
 use std::ptr;
@@ -69,7 +60,6 @@ use std::{io, slice};
     target_os = "tvos",
     target_os = "watchos",
     target_os = "cygwin",
-    target_os = "hermit",
 )))]
 use libc::ssize_t;
 use libc::{in6_addr, in_addr};
@@ -81,15 +71,13 @@ use crate::{MsgHdr, MsgHdrMut, RecvFlags};
 pub(crate) use std::ffi::c_int;
 
 // Used in `Domain`.
-#[cfg(not(target_os = "hermit"))]
-pub(crate) use libc::{AF_UNIX};
-pub(crate) use libc::{AF_INET, AF_INET6, };
+pub(crate) use libc::{AF_INET, AF_INET6, AF_UNIX};
 // Used in `Type`.
 #[cfg(all(feature = "all", target_os = "linux"))]
 pub(crate) use libc::SOCK_DCCP;
-#[cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf",target_os = "hermit"))))]
+#[cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf"))))]
 pub(crate) use libc::SOCK_RAW;
-#[cfg(all(feature = "all", not(any(target_os = "espidf",target_os = "hermit"))))]
+#[cfg(all(feature = "all", not(target_os = "espidf")))]
 pub(crate) use libc::SOCK_SEQPACKET;
 pub(crate) use libc::{SOCK_DGRAM, SOCK_STREAM};
 // Used in `Protocol`.
@@ -109,8 +97,7 @@ pub(crate) use libc::IPPROTO_SCTP;
     )
 ))]
 pub(crate) use libc::IPPROTO_UDPLITE;
-pub(crate) use libc::{IPPROTO_IP, IPPROTO_IPV6, IPPROTO_TCP, IPPROTO_UDP};
-//pub(crate) use libc::{IPPROTO_ICMP, IPPROTO_ICMPV6, IPPROTO_TCP, IPPROTO_UDP};
+pub(crate) use libc::{IPPROTO_ICMP, IPPROTO_ICMPV6, IPPROTO_TCP, IPPROTO_UDP};
 // Used in `SockAddr`.
 #[cfg(all(feature = "all", any(target_os = "freebsd", target_os = "openbsd")))]
 pub(crate) use libc::IPPROTO_DIVERT;
@@ -118,9 +105,9 @@ pub(crate) use libc::{
     sa_family_t, sockaddr, sockaddr_in, sockaddr_in6, sockaddr_storage, socklen_t,
 };
 // Used in `RecvFlags`.
-#[cfg(not(any(target_os = "redox", target_os = "espidf", target_os = "hermit")))]
+#[cfg(not(any(target_os = "redox", target_os = "espidf")))]
 pub(crate) use libc::MSG_TRUNC;
-#[cfg(not(any(target_os = "redox",target_os = "hermit")))]
+#[cfg(not(target_os = "redox"))]
 pub(crate) use libc::SO_OOBINLINE;
 // Used in `Socket`.
 #[cfg(not(target_os = "nto"))]
